@@ -1,5 +1,8 @@
 import './style.css'
 import { registerSW } from 'virtual:pwa-register'
+import { Chess } from 'chess.js'
+import { Board } from './board'
+import { openingsAt, type Opening } from './openings'
 
 // Chromium-only and missing from TypeScript's DOM lib.
 interface BeforeInstallPromptEvent extends Event {
@@ -9,55 +12,101 @@ interface BeforeInstallPromptEvent extends Event {
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 <main>
   <h1>Chess Openings</h1>
-  <p>Coming soon to <code>/chess-openings</code>.</p>
 
-  <dl class="status">
-    <dt>Network</dt>
-    <dd id="network"></dd>
-    <dt>Offline</dt>
-    <dd id="offline" data-state="pending">Caching…</dd>
-    <dt>Mode</dt>
-    <dd id="mode"></dd>
-    <dt>Version</dt>
-    <dd><code>${__APP_VERSION__}</code></dd>
-  </dl>
+  <div class="layout">
+    <div class="board-wrap"><div id="board"></div></div>
 
-  <button id="install" type="button" hidden>Install app</button>
-  <p id="ios-hint" class="hint" hidden>To install, tap Share, then <b>Add to Home Screen</b>.</p>
+    <section class="panel">
+      <p class="label">Current opening</p>
+      <p id="name" class="name"></p>
+      <p id="eco" class="eco"></p>
+      <ol id="moves" class="moves"></ol>
+      <div class="buttons">
+        <button id="undo" type="button">Undo</button>
+        <button id="reset" type="button">Reset</button>
+      </div>
+    </section>
+  </div>
 
-  <a class="home" href="/">← quiggleson.com</a>
+  <footer>
+    <a class="home" href="/">← quiggleson.com</a>
+    <button id="install" type="button" hidden>Install app</button>
+    <span id="ios-hint" class="hint" hidden>To install, tap Share, then <b>Add to Home Screen</b>.</span>
+    <code class="version">${__APP_VERSION__}</code>
+  </footer>
 </main>
 `
 
-const network = document.querySelector<HTMLElement>('#network')!
-const offline = document.querySelector<HTMLElement>('#offline')!
-const mode = document.querySelector<HTMLElement>('#mode')!
+const nameEl = document.querySelector<HTMLElement>('#name')!
+const ecoEl = document.querySelector<HTMLElement>('#eco')!
+const movesEl = document.querySelector<HTMLOListElement>('#moves')!
 const install = document.querySelector<HTMLButtonElement>('#install')!
 const iosHint = document.querySelector<HTMLElement>('#ios-hint')!
 
-function renderNetwork() {
-  network.textContent = navigator.onLine ? 'Online' : 'Offline'
-  network.dataset.state = navigator.onLine ? 'ok' : 'warn'
-}
-renderNetwork()
-window.addEventListener('online', renderNetwork)
-window.addEventListener('offline', renderNetwork)
+const board = new Board(document.querySelector<HTMLElement>('#board')!)
+board.onMove = render
+document.querySelector('#undo')!.addEventListener('click', () => {
+  board.undo()
+  render()
+})
+document.querySelector('#reset')!.addEventListener('click', () => {
+  board.reset()
+  render()
+})
+render()
 
-const standalone = matchMedia('(display-mode: standalone)').matches
-mode.textContent = standalone ? 'Installed app' : 'Browser tab'
+function render() {
+  const sans = board.history()
+  const { opening, ply } = lastNamed(sans)
 
-if ('serviceWorker' in navigator) {
-  // `ready` resolves once a worker is active, and Workbox only activates after the precache has
-  // finished, so this is the earliest point the app can honestly claim to work offline.
-  navigator.serviceWorker.ready.then(() => {
-    offline.textContent = 'Ready'
-    offline.dataset.state = 'ok'
-  })
-  registerSW({ immediate: true })
-} else {
-  offline.textContent = 'Not supported'
-  offline.dataset.state = 'warn'
+  if (!sans.length) {
+    nameEl.textContent = 'Starting position'
+    ecoEl.textContent = 'Make a move to see its name.'
+  } else if (!opening) {
+    nameEl.textContent = 'Out of book'
+    ecoEl.textContent = ''
+  } else {
+    nameEl.textContent = opening.name
+    ecoEl.textContent =
+      ply === sans.length ? opening.eco : `${opening.eco} · out of book after ${moveLabel(sans, ply)}`
+  }
+
+  movesEl.replaceChildren(
+    ...pairs(sans).map(([white, black]) => {
+      const li = document.createElement('li')
+      li.textContent = black ? `${white} ${black}` : white
+      return li
+    }),
+  )
 }
+
+// Walks back from the current position so out-of-book play still names where the book ended.
+function lastNamed(sans: string[]): { opening?: Opening; ply: number } {
+  const replay = new Chess()
+  const fens = [replay.fen()]
+  for (const san of sans) {
+    replay.move(san)
+    fens.push(replay.fen())
+  }
+  for (let ply = sans.length; ply > 0; ply--) {
+    const [opening] = openingsAt(fens[ply])
+    if (opening) return { opening, ply }
+  }
+  return { ply: 0 }
+}
+
+function moveLabel(sans: string[], ply: number) {
+  const number = Math.floor((ply - 1) / 2) + 1
+  return ply % 2 ? `${number}. ${sans[ply - 1]}` : `${number}… ${sans[ply - 1]}`
+}
+
+function pairs(sans: string[]) {
+  const out: [string, string?][] = []
+  for (let i = 0; i < sans.length; i += 2) out.push([sans[i], sans[i + 1]])
+  return out
+}
+
+if ('serviceWorker' in navigator) registerSW({ immediate: true })
 
 let installPrompt: BeforeInstallPromptEvent | null = null
 
@@ -78,4 +127,5 @@ window.addEventListener('appinstalled', () => {
 })
 
 // iOS Safari never fires beforeinstallprompt; installing is a manual Share-sheet action.
+const standalone = matchMedia('(display-mode: standalone)').matches
 iosHint.hidden = standalone || !/iphone|ipad|ipod/i.test(navigator.userAgent)

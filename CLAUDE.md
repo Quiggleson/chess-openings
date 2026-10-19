@@ -3,8 +3,8 @@
 ## What this is
 
 A quiggleson.com sub-app for chess openings, scaffolded from
-[pilot](https://github.com/Quiggleson/pilot), the reference implementation. Right now it is a
-placeholder screen on top of pilot's subpath, PWA, and deploy setup.
+[pilot](https://github.com/Quiggleson/pilot), the reference implementation. It drills openings
+both ways: name → moves and moves → name. [plan.md](plan.md) is the working plan and build order.
 
 - **Live at:** https://www.quiggleson.com/chess-openings
 - **Repo:** https://github.com/Quiggleson/chess-openings
@@ -112,16 +112,24 @@ for any change that touches routing, paths, or the PWA config.
 - **vite-plugin-pwa** (Workbox `generateSW`). Vite emits hashed filenames, which a hand-written
   service worker cannot know to precache.
 - **Cloudflare Worker, assets only** (no `main` script). Nothing here needs a server.
+- **chess.js** (BSD-2) owns the rules; **chessground** (GPL-3) draws the board. chessground's
+  license is why the repo is GPL-3.0-or-later ([LICENSE](LICENSE)).
+- **Openings data:** Lichess's [chess-openings](https://github.com/lichess-org/chess-openings)
+  list (CC0), bundled as `src/data/openings.json`.
 
 ## Layout
 
 ```
 index.html           document shell; head links are rewritten with the /chess-openings/ base
-src/main.ts          the whole UI: status panel, install button, SW registration
+src/main.ts          page shell, current-opening panel, install button, SW registration
+src/board.ts         Board: chessground view driven by a chess.js game
+src/openings.ts      the opening list and the position (EPD) → openings index
+src/data/openings.json  generated; [eco, name, SAN moves, final EPD] per line
 src/style.css        styles; colors are CSS custom properties on :root, light + dark
 src/env.d.ts         ambient types: __APP_VERSION__, virtual:pwa-register
 public/              copied verbatim into dist/chess-openings/: favicon, apple-touch-icon, icons/
 scripts/smoke.sh     HTTP checks against production or a local origin
+scripts/build-openings.ts  regenerates src/data/openings.json (`node scripts/build-openings.ts`)
 scripts/make-icons.sh  regenerates the PNG icons (needs ImageMagick `convert`)
 vite.config.ts       base, outDir, build version, manifest + service worker config
 wrangler.jsonc       Worker name, assets directory, the four routes

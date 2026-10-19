@@ -40,9 +40,9 @@ body {
 }
 
 main {
-  max-width: 34rem;
+  max-width: 60rem;
   margin: 0 auto;
-  padding: 3rem 1rem;
+  padding: 2rem 1rem;
 }
 
 h1 {
@@ -57,43 +57,6 @@ code {
   font-size: 0.9em;
 }
 
-h1 code {
-  color: var(--accent);
-}
-
-.status {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 0.5rem 1.25rem;
-  margin: 2rem 0;
-  padding: 1rem 1.25rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-}
-
-.status dt {
-  color: var(--muted);
-}
-
-.status dd {
-  margin: 0;
-  color: var(--text-h);
-  overflow-wrap: anywhere;
-}
-
-[data-state='ok'] {
-  color: var(--ok);
-}
-
-[data-state='warn'] {
-  color: var(--warn);
-}
-
-[data-state='pending'] {
-  color: var(--muted);
-}
-
 button {
   font: inherit;
   padding: 0.6rem 1.2rem;
@@ -104,12 +67,93 @@ button {
   cursor: pointer;
 }
 
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 36rem) minmax(14rem, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 44rem) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* chessground sizes the board from its container, so the wrapper holds the square. */
+.board-wrap {
+  aspect-ratio: 1;
+  width: 100%;
+}
+
+#board {
+  width: 100%;
+  height: 100%;
+}
+
+.panel {
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.panel p {
+  margin: 0;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.name {
+  margin-top: 0.25rem !important;
+  color: var(--text-h);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.eco {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.moves {
+  min-height: 3rem;
+  margin: 1rem 0;
+  padding-left: 2rem;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  columns: 2;
+}
+
+.buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-top: 2rem;
+  font-size: 0.9rem;
+}
+
+.version {
+  margin-left: auto;
+  color: var(--muted);
+}
+
 .hint {
   color: var(--muted);
 }
 
 .home {
-  display: inline-block;
-  margin-top: 2rem;
   color: var(--accent);
 }

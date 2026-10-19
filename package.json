@@ -20,5 +20,10 @@
     "vite": "^8.3.0",
     "vite-plugin-pwa": "^2.0.0",
     "wrangler": "^4.151.0"
-  }
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "chessground": "^9.2.1"
+  },
+  "license": "GPL-3.0-or-later"
 }

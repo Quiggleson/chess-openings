@@ -12,3 +12,9 @@ npm run preview    # build + local Worker at http://localhost:8787/chess-opening
 ```
 
 Merging to `main` deploys via GitHub Actions.
+
+## License
+
+GPL-3.0-or-later, because the board is [chessground](https://github.com/lichess-org/chessground).
+Opening names and moves are from Lichess's [chess-openings](https://github.com/lichess-org/chess-openings)
+(CC0).
