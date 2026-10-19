@@ -5,7 +5,7 @@ A small, front-end-only personal tool for learning chess openings. Two drills:
 1. **Play it** — given an opening's name, play its moves on the board.
 2. **Name it** — given the position (and the moves that led there), type the opening's name.
 
-This file is the working plan. Edit it as decisions change; open questions are at the bottom.
+This file is the working plan. Edit it as decisions change; settled decisions are at the bottom.
 
 ## Data
 
@@ -129,19 +129,11 @@ open question 3). No repeats until the pool is used up.
 
 Each step is its own PR with a short preview note.
 
-## Open questions
+## Decisions
 
-1. **Board library.** chessground is the nicer board (it's what Lichess uses), but it's GPL-3, so
-   this repo would need a GPL-3 license. It's public and personal, so that's probably fine.
-   cm-chessboard is MIT and simpler. **Leaning chessground.**
-2. **Play it, both sides?** The plan has the user play both colors. Alternative: pick a color, and
-   the app plays the other side's moves automatically. **Leaning both sides**, with "play one
-   side" as a later toggle.
-3. **Which openings are in the pool?** All 3,865 lines includes a lot of obscure ones (Amar
-   Opening: Paris Gambit…). Options: all of them; filters by family or ECO letter; a max line
-   length; or a hand-picked "common openings" list to start. **Leaning: all, plus a family filter
-   and a max-length slider.**
-4. **Board orientation in Name it.** Always from White's side, or flip to the side that "owns" the
-   opening (e.g. Black for defenses)? **Leaning always White**, with a flip button.
-5. **"Close" in Name it.** Is right family / wrong variation worth a separate "close" result, or
-   is it just wrong?
+1. **Board library: chessground.** It's GPL-3, so the repo gets a GPL-3 `LICENSE` in build step 1.
+   cm-chessboard (MIT) was the alternative.
+2. **Play it: the user plays both sides.** "Play one side, app replies" is a possible later toggle.
+3. **Pool: all 3,865 lines**, with a family filter and a max-length slider.
+4. **Name it orientation: always from White's side**, with a flip button.
+5. **"Close" stays** as its own result in Name it (right family, wrong variation).
