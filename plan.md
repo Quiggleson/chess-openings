@@ -15,10 +15,10 @@ This file is the working plan. Edit it as decisions change; settled decisions ar
   "Sicilian Defense"). Longest line is 54 plies. Raw TSV is ~400 KB; as JSON it should gzip to well
   under 100 KB.
 - **Build step:** a script (`scripts/build-openings.ts`) downloads the TSVs once and writes
-  `src/data/openings.json`, which is committed. Each entry gets:
-  - `id` (stable index), `eco`, `name`, `family`, `variation`
-  - `moves`: SAN list (`["e4", "e5", "f4"]`)
+  `src/data/openings.json`, which is committed. Each entry is `[eco, name, moves, epd]`:
+  - `moves`: space-separated SAN (`"e4 e5 f4"`)
   - `epd`: the final position (FEN without the move counters), for transposition lookups
+  - `id` (array index) and `family` (the name before the `:`) are derived at load.
 - **Position index:** `epd → [opening ids]`, built at load. This is what "name the current
   position" uses in both modes, so transpositions resolve to the right name no matter the move
   order.
@@ -121,7 +121,7 @@ open question 3). No repeats until the pool is used up.
 ## Build order
 
 1. **Data + core:** dataset script and JSON, chess.js, board component, position index. Board
-   rendered on screen.
+   rendered on screen. ✅ Free-play board that names the current opening.
 2. **Play it:** drill flow, mistakes and hints, free play with live names, Next.
 3. **Name it:** final position, move navigation, fuzzy search, checking, Next.
 4. **Polish:** tabs, session score, mobile layout, keyboard shortcuts, light/dark board colors.
