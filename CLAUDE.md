@@ -15,8 +15,8 @@ placeholder screen on top of pilot's subpath, PWA, and deploy setup.
 
 This repo is edited by coding agents driven from Slack. The human is the gate.
 
-- **Never push to `main`.** Work on a branch, commit, open a PR. `main` is protected with
-  `enforce_admins`, so a push is rejected even with the owner's token.
+- **Never push to `main`.** Work on a branch, commit, open a PR. `main` is deliberately
+  unprotected (a one-person project), so nothing enforces this but the rule itself.
 - **Deploys happen on merge.** [.github/workflows/deploy.yml](.github/workflows/deploy.yml) runs
   `npm run deploy` and the production smoke checks whenever `main` changes, so the human's merge
   is the deploy decision. When the human asks, an agent may run or re-run the Deploy workflow
@@ -152,7 +152,7 @@ wrangler.jsonc       Worker name, assets directory, the four routes
 
 ## New repo checklist (human)
 
-- [ ] Repo created under `Quiggleson/`, PR-only: protect `main`, require a PR before merge, include admins.
+- [x] Repo created under `Quiggleson/`. (`main` is deliberately unprotected: a one-person project.)
 - [x] `wrangler.jsonc` routes for all four patterns above.
 - [ ] Cloudflare API token in repo secrets if deploys are automated on merge. (Automated on merge: add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository Actions secrets.)
 - [x] Manifest and service worker scoped to `/chess-openings/`.
