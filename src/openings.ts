@@ -46,7 +46,8 @@ export function epd(fen: string) {
   return fen.split(' ').slice(0, 4).join(' ')
 }
 
-// Keyed by position rather than move order, so transpositions resolve to the same name.
+// Keyed by position rather than move order, so transpositions resolve to the same name. Takes a
+// FEN or an EPD.
 export function openingsAt(fen: string): Opening[] {
   return byPosition.get(epd(fen)) ?? []
 }

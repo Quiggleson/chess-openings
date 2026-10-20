@@ -190,6 +190,91 @@ footer {
   color: var(--muted);
 }
 
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs button {
+  padding: 0.5rem 1rem;
+  color: var(--muted);
+  background: transparent;
+  border-radius: 0.5rem 0.5rem 0 0;
+  box-shadow: inset 0 -2px 0 transparent;
+}
+
+.tabs button[aria-selected='true'] {
+  color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+[role='tabpanel'][hidden] {
+  display: none;
+}
+
+.nav {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.nav button {
+  padding: 0.4rem 0.9rem;
+}
+
+.moves button.move {
+  padding: 0 0.2rem;
+  color: var(--text);
+  font: inherit;
+  background: transparent;
+  border-radius: 0.25rem;
+}
+
+.moves button.move[aria-current] {
+  color: var(--accent-text);
+  background: var(--accent);
+}
+
+.answer {
+  position: relative;
+}
+
+.answer input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.answer input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.suggestions {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggestions li {
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.suggestions li[aria-selected='true'] {
+  color: var(--text-h);
+  background: var(--border);
+}
+
 .hint {
   color: var(--muted);
 }
