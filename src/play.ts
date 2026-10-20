@@ -2,9 +2,8 @@ import { Board } from './board'
 import { renderMoves } from './moves'
 import { epd, lastNamed, moveLabel, names, openingsNamed, positions, type Opening } from './openings'
 import { Pool } from './pool'
+import type { Progress, Result } from './progress'
 import type { Score } from './score'
-
-type Result = 'clean' | 'help' | 'fail'
 
 interface Candidate {
   opening: Opening
@@ -14,7 +13,12 @@ interface Candidate {
 const MISSES_BEFORE_ARROW = 3
 
 // Name → moves. The user plays both sides; any line sharing the prompt's name counts.
-export function playIt(root: HTMLElement, score: Score, include: (opening: Opening) => boolean) {
+export function playIt(
+  root: HTMLElement,
+  score: Score,
+  progress: Progress,
+  include: (opening: Opening) => boolean,
+) {
   root.innerHTML = `
     <div class="layout">
       <div class="board-wrap"><div class="board"></div></div>
@@ -40,8 +44,12 @@ export function playIt(root: HTMLElement, score: Score, include: (opening: Openi
   const [hintBtn, showBtn, undoBtn, nextBtn] = ['hint', 'show', 'undo', 'next'].map(button)
 
   const board = new Board(root.querySelector<HTMLElement>('.board')!)
-  const pool = new Pool(() => names.filter((name) => openingsNamed(name).some(include)))
+  const pool = new Pool(
+    () => names.filter((name) => openingsNamed(name).some(include)),
+    (name) => progress.isShaky('play', name),
+  )
 
+  let prompt = ''
   let candidates: Candidate[] = []
   let state: 'drill' | 'showing' | 'done' = 'drill'
   let lineEnd = 0
@@ -89,7 +97,7 @@ export function playIt(root: HTMLElement, score: Score, include: (opening: Openi
   nextBtn.addEventListener('click', start)
 
   function start() {
-    const name = pool.next()!
+    const name = (prompt = pool.next()!)
     candidates = openingsNamed(name).map((opening) => ({ opening, positions: positions(opening.moves) }))
     state = 'drill'
     misses = 0
@@ -129,6 +137,7 @@ export function playIt(root: HTMLElement, score: Score, include: (opening: Openi
     state = 'done'
     lineEnd = board.history().length
     score.record(result === 'clean')
+    progress.record('play', prompt, result)
     const opening = candidates[0].opening
     const verdict = { clean: '✓ Correct', help: '✓ Done, with help', fail: '✗ Shown' }[result]
     feedback(`${verdict} · ${opening.eco}. Keep playing to explore, or press Next.`, result === 'clean' ? 'ok' : undefined)

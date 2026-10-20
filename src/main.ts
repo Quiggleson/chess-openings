@@ -4,7 +4,9 @@ import { families, loadFilter, LONGEST, matches, saveFilter } from './filter'
 import { nameIt } from './name'
 import { openings, type Opening } from './openings'
 import { playIt } from './play'
+import { Progress } from './progress'
 import { Score } from './score'
+import { stats } from './stats'
 
 // Chromium-only and missing from TypeScript's DOM lib.
 interface BeforeInstallPromptEvent extends Event {
@@ -21,6 +23,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <nav class="tabs" role="tablist">
     <button type="button" role="tab" id="tab-play" aria-controls="play" aria-selected="true">Play it</button>
     <button type="button" role="tab" id="tab-name" aria-controls="name" aria-selected="false">Name it</button>
+    <button type="button" role="tab" id="tab-stats" aria-controls="stats" aria-selected="false">Stats</button>
   </nav>
 
   <details class="filters">
@@ -41,6 +44,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
   <div id="play" role="tabpanel" aria-labelledby="tab-play"></div>
   <div id="name" role="tabpanel" aria-labelledby="tab-name" hidden></div>
+  <div id="stats" role="tabpanel" aria-labelledby="tab-stats" hidden></div>
 
   <footer>
     <a class="home" href="/">← quiggleson.com</a>
@@ -71,9 +75,11 @@ familySelect.value = filter.family
 maxInput.value = String(filter.maxMoves)
 const include = (opening: Opening) => matches(opening, filter)
 
+const progress = new Progress()
 const modes = {
-  play: playIt(document.querySelector<HTMLElement>('#play')!, score, include),
-  name: nameIt(document.querySelector<HTMLElement>('#name')!, score, include),
+  play: playIt(document.querySelector<HTMLElement>('#play')!, score, progress, include),
+  name: nameIt(document.querySelector<HTMLElement>('#name')!, score, progress, include),
+  stats: stats(document.querySelector<HTMLElement>('#stats')!, progress),
 }
 type Mode = keyof typeof modes
 const TAB_KEY = 'chess-openings:tab'
@@ -90,6 +96,8 @@ function select(key: Mode) {
     document.querySelector(`#tab-${other}`)!.setAttribute('aria-selected', String(other === key))
     document.querySelector<HTMLElement>(`#${other}`)!.hidden = other !== key
   }
+  // The filter picks drills; it has nothing to say about stats.
+  document.querySelector<HTMLElement>('.filters')!.hidden = key === 'stats'
   modes[key].show()
   try {
     localStorage.setItem(TAB_KEY, key)
