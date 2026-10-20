@@ -141,7 +141,8 @@ export class Deck {
 function load(): [string, Entry][] {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? '[]')
-    if (Array.isArray(saved)) return saved
+    // Skips anything malformed (hand-edited storage, an older format) instead of breaking the page.
+    if (Array.isArray(saved)) return saved.filter(([, entry]) => entry?.cards?.play && entry?.cards?.name)
   } catch {}
   return []
 }

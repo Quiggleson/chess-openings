@@ -82,11 +82,19 @@ the apps cannot interfere with each other or with the portfolio.
   served from, so serving it at the subpath confines it there. Never serve it from the domain
   root — it would hijack the whole site.
 - Registered with an explicit `scope: '/chess-openings/'` (the plugin's `scope` option) via
-  `registerSW()` in [src/main.ts](src/main.ts).
+  `registerSW()` in [src/updates.ts](src/updates.ts).
 - The app shell is precached by Workbox, so the installed app opens offline.
 - Workbox revisions each precached file by content hash, so changed assets reach installed clients
   on the next launch without a manual cache-name bump. `registerType: 'autoUpdate'` activates the
   new worker immediately.
+- **Staying current** ([src/updates.ts](src/updates.ts)): besides the browser's own check on
+  navigation, the app checks for a new worker when it returns to the foreground (at most once a
+  minute), every 30 minutes, and on reconnect. A new version reloads the page by itself while the
+  app is hidden; in the foreground it shows a "New version ready · Reload" toast instead, so a
+  reload never lands mid-drill. The footer has **Check for updates** and **Clear cache** (deletes
+  only caches under this app's scope, since quiggleson.com apps share an origin, and unregisters
+  the worker; localStorage progress is kept). The last-seen commit SHA is stored so the footer can
+  say "Updated to …" after an update.
 
 ## Commands
 
@@ -121,7 +129,8 @@ for any change that touches routing, paths, or the PWA config.
 
 ```
 index.html           document shell; head links are rewritten with the /chess-openings/ base
-src/main.ts          page shell, tabs, session score, keyboard routing, install button, SW registration
+src/main.ts          page shell, tabs, session score, keyboard routing, install button
+src/updates.ts       SW registration, update checks, reload timing, Check for updates / Clear cache
 src/play.ts          Play it drill (name → moves): hints, Show me, free play after the line
 src/name.ts          Name it drill (moves → name): move navigation, flip, type-ahead answer
 src/search.ts        word-prefix name search behind the Name it answer box

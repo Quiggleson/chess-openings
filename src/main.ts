@@ -1,5 +1,4 @@
 import './style.css'
-import { registerSW } from 'virtual:pwa-register'
 import { families, loadFilter, LONGEST, matches, saveFilter, type Filter } from './filter'
 import { nameIt } from './name'
 import { openings } from './openings'
@@ -8,6 +7,7 @@ import { Progress } from './progress'
 import { Score } from './score'
 import { lineOf, Session } from './session'
 import { stats } from './stats'
+import { setupUpdates } from './updates'
 
 // Chromium-only and missing from TypeScript's DOM lib.
 interface BeforeInstallPromptEvent extends Event {
@@ -61,8 +61,18 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <a class="home" href="/">← quiggleson.com</a>
     <button id="install" type="button" hidden>Install app</button>
     <span id="ios-hint" class="hint" hidden>To install, tap Share, then <b>Add to Home Screen</b>.</span>
-    <code class="version">${__APP_VERSION__}</code>
+    <span class="update">
+      <code id="version" class="version"></code>
+      <button id="check-updates" type="button" class="link">Check for updates</button>
+      <button id="clear-cache" type="button" class="link">Clear cache</button>
+      <span id="update-status" class="muted" aria-live="polite"></span>
+    </span>
   </footer>
+
+  <div id="update-toast" class="toast" role="status" hidden>
+    New version ready.
+    <button id="update-reload" type="button">Reload</button>
+  </div>
 </main>
 `
 
@@ -196,7 +206,14 @@ document.addEventListener('keydown', (event) => {
   modes[active].onKey(event)
 })
 
-if ('serviceWorker' in navigator) registerSW({ immediate: true })
+setupUpdates({
+  version: document.querySelector<HTMLElement>('#version')!,
+  check: document.querySelector<HTMLButtonElement>('#check-updates')!,
+  clear: document.querySelector<HTMLButtonElement>('#clear-cache')!,
+  status: document.querySelector<HTMLElement>('#update-status')!,
+  toast: document.querySelector<HTMLElement>('#update-toast')!,
+  reload: document.querySelector<HTMLButtonElement>('#update-reload')!,
+})
 
 let installPrompt: BeforeInstallPromptEvent | null = null
 
