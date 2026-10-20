@@ -1,0 +1,27 @@
+name: Popularity
+
+# Fetches Lichess game counts for every opening position and uploads them as an artifact. It never
+# commits: a person (or an agent, via a PR) brings the file into the repo, so main only changes
+# through review.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/fetch-popularity.ts
+        env:
+          LICHESS_TOKEN: ${{ secrets.LICHESS_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: popularity
+          path: src/data/popularity.json
