@@ -1,11 +1,12 @@
 import './style.css'
 import { registerSW } from 'virtual:pwa-register'
-import { families, loadFilter, LONGEST, matches, saveFilter } from './filter'
+import { families, loadFilter, LONGEST, matches, saveFilter, type Filter } from './filter'
 import { nameIt } from './name'
-import { openings, type Opening } from './openings'
+import { openings } from './openings'
 import { playIt } from './play'
 import { Progress } from './progress'
 import { Score } from './score'
+import { lineOf, Session } from './session'
 import { stats } from './stats'
 
 // Chromium-only and missing from TypeScript's DOM lib.
@@ -21,14 +22,24 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </header>
 
   <nav class="tabs" role="tablist">
-    <button type="button" role="tab" id="tab-play" aria-controls="play" aria-selected="true">Play it</button>
-    <button type="button" role="tab" id="tab-name" aria-controls="name" aria-selected="false">Name it</button>
+    <button type="button" role="tab" id="tab-play" aria-controls="play" aria-selected="true">
+      Play it <span class="due" data-due="play" hidden></span>
+    </button>
+    <button type="button" role="tab" id="tab-name" aria-controls="name" aria-selected="false">
+      Name it <span class="due" data-due="name" hidden></span>
+    </button>
     <button type="button" role="tab" id="tab-stats" aria-controls="stats" aria-selected="false">Stats</button>
   </nav>
 
   <details class="filters">
     <summary id="filter-summary"></summary>
     <div class="filter-controls">
+      <label>Practice
+        <select id="source">
+          <option value="all">All openings</option>
+          <option value="deck">My deck (due cards)</option>
+        </select>
+      </label>
       <label>Family
         <select id="family">
           <option value="">All families</option>
@@ -64,6 +75,7 @@ score.onChange = () => {
   scoreEl.textContent = `${score.right} / ${score.total} this session`
 }
 
+const sourceSelect = document.querySelector<HTMLSelectElement>('#source')!
 const familySelect = document.querySelector<HTMLSelectElement>('#family')!
 const maxInput = document.querySelector<HTMLInputElement>('#max')!
 const maxOut = document.querySelector<HTMLOutputElement>('#max-out')!
@@ -71,15 +83,20 @@ const poolCount = document.querySelector<HTMLElement>('#pool-count')!
 const filterSummary = document.querySelector<HTMLElement>('#filter-summary')!
 
 let filter = loadFilter()
+sourceSelect.value = filter.source
 familySelect.value = filter.family
 maxInput.value = String(filter.maxMoves)
-const include = (opening: Opening) => matches(opening, filter)
 
 const progress = new Progress()
+const session = new Session(score, progress, () => filter)
+session.practiceAll = () => {
+  sourceSelect.value = 'all'
+  changeFilter()
+}
 const modes = {
-  play: playIt(document.querySelector<HTMLElement>('#play')!, score, progress, include),
-  name: nameIt(document.querySelector<HTMLElement>('#name')!, score, progress, include),
-  stats: stats(document.querySelector<HTMLElement>('#stats')!, progress),
+  play: playIt(document.querySelector<HTMLElement>('#play')!, session),
+  name: nameIt(document.querySelector<HTMLElement>('#name')!, session),
+  stats: stats(document.querySelector<HTMLElement>('#stats')!, progress, session),
 }
 type Mode = keyof typeof modes
 const TAB_KEY = 'chess-openings:tab'
@@ -113,12 +130,18 @@ function savedTab(): Mode {
 }
 
 renderFilter()
+sourceSelect.addEventListener('change', changeFilter)
 familySelect.addEventListener('change', changeFilter)
 maxInput.addEventListener('input', renderFilter)
 maxInput.addEventListener('change', changeFilter)
 
+function pendingFilter(): Filter {
+  const source = sourceSelect.value === 'deck' ? 'deck' : 'all'
+  return { source, family: familySelect.value, maxMoves: Number(maxInput.value) }
+}
+
 function changeFilter() {
-  const next = { family: familySelect.value, maxMoves: Number(maxInput.value) }
+  const next = pendingFilter()
   if (!openings.some((o) => matches(o, next))) {
     renderFilter()
     return
@@ -126,19 +149,43 @@ function changeFilter() {
   filter = next
   saveFilter(filter)
   renderFilter()
-  for (const mode of Object.values(modes)) mode.refill()
+  session.refill()
+  modes.play.restart()
+  modes.name.restart()
 }
 
 // Shows what the controls would select while the slider is still moving, before it applies.
 function renderFilter() {
-  const pending = { family: familySelect.value, maxMoves: Number(maxInput.value) }
+  const pending = pendingFilter()
   maxOut.textContent = maxInput.value
   const count = openings.filter((o) => matches(o, pending)).length
-  poolCount.textContent = count ? `${count.toLocaleString()} lines` : 'No lines match; showing the previous set'
+  const inDeck = session.deck.all().filter((entry) => matches(lineOf(entry), pending)).length
+  poolCount.textContent = !count
+    ? 'No lines match; showing the previous set'
+    : pending.source === 'deck'
+      ? `${inDeck} of your ${session.deck.all().length} deck openings`
+      : `${count.toLocaleString()} lines`
   poolCount.dataset.state = count ? '' : 'warn'
   const moves = filter.maxMoves < LONGEST ? `, up to ${filter.maxMoves} moves` : ''
-  filterSummary.textContent = `Openings: ${filter.family || 'all families'}${moves}`
+  const source = filter.source === 'deck' ? 'my deck' : 'all openings'
+  filterSummary.textContent = `Practice: ${source} · ${filter.family || 'all families'}${moves}`
+  renderDue()
 }
+
+// Due counts on the drill tabs, once there is a deck to count.
+function renderDue() {
+  const hasDeck = session.deck.all().length > 0
+  for (const badge of document.querySelectorAll<HTMLElement>('[data-due]')) {
+    const due = session.due(badge.dataset.due as 'play' | 'name').length
+    badge.hidden = !hasDeck
+    badge.textContent = String(due)
+    badge.dataset.zero = String(due === 0)
+    badge.title = `${due} due in your deck`
+  }
+}
+session.deck.subscribe(renderFilter)
+// Cards come due as time passes, not only when something is answered.
+setInterval(renderDue, 60_000)
 
 document.addEventListener('keydown', (event) => {
   const target = event.target

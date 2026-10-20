@@ -118,6 +118,25 @@ open question 3). No repeats until the pool is used up.
 - Weight the next-drill pick toward openings the user missed recently (simple spaced repetition).
 - A small stats view: accuracy per family.
 
+## My deck (spaced repetition)
+
+Anki-style practice of the openings you pick.
+
+- **Adding:** a ☆ Add to deck button on both drills (or `*`). Starring adds the opening's name
+  plus a position: the line shown in Name it, or the name's shortest line from Play it.
+- **Cards:** each deck opening has two, Play it and Name it, scheduled separately.
+- **Reviewing:** Practice → "My deck (due cards)" in the Openings filter. Each drill then serves
+  only its due cards, soonest first, and the tabs show due counts. The family and length filters
+  still apply. With nothing due: "All caught up. Next card in …", Check again, and a button back
+  to all openings.
+- **Grading:** automatic. Clean = Good, misses or hints = Hard, Show me / Give up = Again. After a
+  clean answer an **Easy** button (or `E`) re-grades it as Easy.
+- **Scheduling:** SM-2. New and missed cards come back in a minute (sooner if nothing else is
+  due); passes go 1 day → 3 days → interval × ease (starts 2.5; Hard −0.15, Easy +0.15, Again
+  −0.2, floor 1.3). Day intervals land on local midnight.
+- **Managing:** Stats lists the deck with each card's next due date and a ✕ to remove it.
+- Only answers given in deck mode grade cards; practicing all openings never moves a due date.
+
 ## Build order
 
 1. **Data + core:** dataset script and JSON, chess.js, board component, position index. Board

@@ -1,20 +1,15 @@
 import { Board } from './board'
 import { renderMoves } from './moves'
-import { names, openings, openingsAt, type Opening } from './openings'
-import { Pool } from './pool'
-import type { Progress, Result } from './progress'
-import type { Score } from './score'
+import { names, openingsAt, type Opening } from './openings'
+import type { Result } from './progress'
 import { searcher } from './search'
+import type { Session } from './session'
+import { starButton } from './star'
 
 const search = searcher(names)
 
 // Moves → name. Shows a line's final position; any name for that position counts.
-export function nameIt(
-  root: HTMLElement,
-  score: Score,
-  progress: Progress,
-  include: (opening: Opening) => boolean,
-) {
+export function nameIt(root: HTMLElement, session: Session) {
   root.innerHTML = `
     <div class="layout">
       <div>
@@ -28,7 +23,9 @@ export function nameIt(
         </div>
       </div>
       <section class="panel">
-        <p class="label">Name this opening</p>
+        <div class="prompt-row">
+          <p class="label">Name this opening</p>
+        </div>
         <ol class="moves"></ol>
         <form class="answer" autocomplete="off">
           <input type="text" placeholder="Start typing a name…" aria-label="Opening name"
@@ -38,9 +35,11 @@ export function nameIt(
         <p class="feedback" aria-live="polite"></p>
         <div class="buttons">
           <button type="button" data-action="give-up" class="secondary">Give up</button>
+          <button type="button" data-action="easy" class="secondary" hidden>Easy</button>
           <button type="button" data-action="next" hidden>Next</button>
+          <button type="button" data-action="all" class="secondary" hidden>Practice all openings</button>
         </div>
-        <p class="keys">Keys: <kbd>←</kbd> <kbd>→</kbd> step · <kbd>F</kbd> flip · <kbd>/</kbd> answer · <kbd>Enter</kbd> next</p>
+        <p class="keys">Keys: <kbd>←</kbd> <kbd>→</kbd> step · <kbd>F</kbd> flip · <kbd>/</kbd> answer · <kbd>E</kbd> easy · <kbd>*</kbd> star · <kbd>Enter</kbd> next</p>
       </section>
     </div>
   `
@@ -51,15 +50,15 @@ export function nameIt(
   const feedbackEl = root.querySelector<HTMLElement>('.feedback')!
   const giveUpBtn = root.querySelector<HTMLButtonElement>('[data-action="give-up"]')!
   const nextBtn = root.querySelector<HTMLButtonElement>('[data-action="next"]')!
+  const easyBtn = root.querySelector<HTMLButtonElement>('[data-action="easy"]')!
+  const allBtn = root.querySelector<HTMLButtonElement>('[data-action="all"]')!
+  const star = starButton(session.deck)
+  root.querySelector('.prompt-row')!.append(star.el)
 
   const board = new Board(root.querySelector<HTMLElement>('.board')!)
   board.setInteractive(false)
-  const pool = new Pool(
-    () => openings.filter(include),
-    (line) => progress.isShaky('name', line.epd),
-  )
 
-  let line: Opening
+  let line: Opening | undefined
   let answers: Opening[] = []
   let ply = 0
   let tries = 0
@@ -73,6 +72,8 @@ export function nameIt(
   root.querySelector('[data-action="flip"]')!.addEventListener('click', flip)
   giveUpBtn.addEventListener('click', () => finish('fail'))
   nextBtn.addEventListener('click', next)
+  easyBtn.addEventListener('click', markEasy)
+  allBtn.addEventListener('click', () => session.practiceAll())
 
   input.addEventListener('input', () => {
     suggestions = search(input.value)
@@ -99,10 +100,14 @@ export function nameIt(
   })
 
   function start() {
-    line = pool.next()!
-    answers = openingsAt(line.epd)
+    line = session.nextName()
     tries = 0
-    done = false
+    done = !line
+    easyBtn.hidden = true
+    allBtn.hidden = !!line
+    if (!line) return empty()
+    star.set(line.name, line.epd)
+    answers = openingsAt(line.epd)
     board.orientation = 'white'
     input.value = ''
     input.disabled = false
@@ -111,7 +116,29 @@ export function nameIt(
     feedback('')
     giveUpBtn.hidden = false
     nextBtn.hidden = true
+    nextBtn.textContent = 'Next'
     goTo(line.moves.length)
+  }
+
+  function empty() {
+    star.set(undefined)
+    answers = []
+    board.reset()
+    movesEl.replaceChildren()
+    input.value = ''
+    input.disabled = true
+    suggestions = []
+    renderSuggestions()
+    feedback(session.emptyMessage('name'))
+    giveUpBtn.hidden = true
+    nextBtn.hidden = false
+    nextBtn.textContent = 'Check again'
+  }
+
+  function markEasy() {
+    if (easyBtn.hidden || !line) return
+    easyBtn.hidden = true
+    feedback(session.easy('name', line), 'ok')
   }
 
   function next() {
@@ -134,14 +161,15 @@ export function nameIt(
   }
 
   function finish(result: Result) {
+    if (!line) return
     done = true
-    score.record(result === 'clean')
-    progress.record('name', line.epd, result)
+    const review = session.finish('name', line, result)
     const answer = `${answers[0].name} (${answers[0].eco})`
     const others = [...new Set(answers.map((a) => a.name))].slice(1)
     const also = others.length ? ` Also known as: ${others.join('; ')}.` : ''
     const verdict = { clean: '✓ Correct', help: '✓ Got it', fail: 'It was' }[result]
-    feedback(`${verdict}: ${answer}.${also}`, result === 'fail' ? undefined : 'ok')
+    feedback(`${verdict}: ${answer}.${also} ${review}`.trim(), result === 'fail' ? undefined : 'ok')
+    easyBtn.hidden = !(result === 'clean' && session.canEasy('name', line))
     input.disabled = true
     giveUpBtn.hidden = true
     nextBtn.hidden = false
@@ -153,12 +181,14 @@ export function nameIt(
   }
 
   function step(where: string) {
+    if (!line) return
     const last = line.moves.length
     const target = { start: 0, back: ply - 1, forward: ply + 1, end: last }[where] ?? ply
     goTo(Math.max(0, Math.min(last, target)))
   }
 
   function goTo(target: number) {
+    if (!line) return
     ply = target
     board.load(line.moves, ply)
     renderMoves(movesEl, line.moves, ply, goTo)
@@ -198,10 +228,7 @@ export function nameIt(
       board.redraw()
       if (!done) input.focus({ preventScroll: true })
     },
-    refill() {
-      pool.refill()
-      start()
-    },
+    restart: start,
     onKey(event: KeyboardEvent) {
       const steps: Record<string, string> = { ArrowLeft: 'back', ArrowRight: 'forward', Home: 'start', End: 'end' }
       if (steps[event.key]) {
@@ -212,6 +239,10 @@ export function nameIt(
       } else if (event.key === '/' && !done) {
         event.preventDefault()
         input.focus()
+      } else if (event.key.toLowerCase() === 'e') {
+        markEasy()
+      } else if (event.key === '*') {
+        star.toggle()
       } else if ((event.key === 'Enter' || event.key.toLowerCase() === 'n') && done) {
         next()
       }

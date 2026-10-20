@@ -127,6 +127,9 @@ src/name.ts          Name it drill (moves → name): move navigation, flip, type
 src/search.ts        word-prefix name search behind the Name it answer box
 src/moves.ts         numbered move list, optionally clickable
 src/board.ts         Board: chessground view driven by a chess.js game; accept/reject hook, hints
+src/session.ts       what the drills draw next (all openings or due deck cards) and where results go
+src/deck.ts          My deck: starred openings, two cards each, SM-2 scheduling, localStorage
+src/star.ts          the ☆ Add to deck toggle on both drills
 src/pool.ts          shuffled draws without repeats, with some draws revisiting recent misses
 src/filter.ts        family / max-moves filter for both drills, saved in localStorage
 src/score.ts         session tally shared by the drills

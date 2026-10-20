@@ -3,6 +3,7 @@ import { openings, type Opening } from './openings'
 export interface Filter {
   family: string
   maxMoves: number
+  source: 'all' | 'deck'
 }
 
 const KEY = 'chess-openings:filter'
@@ -21,11 +22,12 @@ export function matches(opening: Opening, filter: Filter) {
 
 // Browser storage can be missing or throw (private windows, blocked site data); fall back to all.
 export function loadFilter(): Filter {
-  const all = { family: '', maxMoves: LONGEST }
+  const all: Filter = { family: '', maxMoves: LONGEST, source: 'all' }
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null')
     if (saved && (saved.family === '' || families.includes(saved.family)) && saved.maxMoves >= 1) {
-      return { family: saved.family, maxMoves: Math.min(saved.maxMoves, LONGEST) }
+      const source = saved.source === 'deck' ? 'deck' : 'all'
+      return { family: saved.family, maxMoves: Math.min(saved.maxMoves, LONGEST), source }
     }
   } catch {}
   return all

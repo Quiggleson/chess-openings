@@ -415,27 +415,98 @@ kbd {
   font-size: 0.8rem;
 }
 
-.families {
+.prompt-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+button.star {
+  flex: none;
+  padding: 0.25rem 0.6rem;
+  color: var(--accent);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+button.star[aria-pressed='true'] {
+  color: var(--accent-text);
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.due {
+  display: inline-block;
+  min-width: 1.2em;
+  margin-left: 0.2rem;
+  padding: 0 0.35rem;
+  color: var(--accent-text);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: center;
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.due[data-zero='true'] {
+  color: var(--muted);
+  background: var(--border);
+}
+
+.due[hidden] {
+  display: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+button.remove {
+  padding: 0.1rem 0.45rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  background: transparent;
+}
+
+button.remove:hover {
+  color: var(--warn);
+}
+
+.families,
+.deck {
   width: 100%;
   margin: 0.75rem 0 1rem;
   border-collapse: collapse;
   font-size: 0.95rem;
 }
 
-.families th {
+.families th,
+.deck th {
   color: var(--muted);
   font-weight: 500;
   text-align: left;
 }
 
 .families th,
-.families td {
+.families td,
+.deck th,
+.deck td {
   padding: 0.35rem 0.5rem 0.35rem 0;
   border-bottom: 1px solid var(--border);
 }
 
 .families td:not(:first-child),
-.families th:not(:first-child) {
+.families th:not(:first-child),
+.deck td:not(:first-child),
+.deck th:not(:first-child) {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
