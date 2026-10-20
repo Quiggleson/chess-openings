@@ -121,8 +121,11 @@ for any change that touches routing, paths, or the PWA config.
 
 ```
 index.html           document shell; head links are rewritten with the /chess-openings/ base
-src/main.ts          page shell, current-opening panel, install button, SW registration
-src/board.ts         Board: chessground view driven by a chess.js game
+src/main.ts          page shell, session score, keyboard routing, install button, SW registration
+src/play.ts          Play it drill (name → moves): hints, Show me, free play after the line
+src/board.ts         Board: chessground view driven by a chess.js game; accept/reject hook, hints
+src/pool.ts          shuffled draws without repeats
+src/score.ts         session tally shared by the drills
 src/openings.ts      the opening list and the position (EPD) → openings index
 src/data/openings.json  generated; [eco, name, SAN moves, final EPD] per line
 src/style.css        styles; colors are CSS custom properties on :root, light + dark

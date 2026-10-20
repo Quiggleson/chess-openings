@@ -122,7 +122,7 @@ open question 3). No repeats until the pool is used up.
 
 1. **Data + core:** dataset script and JSON, chess.js, board component, position index. Board
    rendered on screen. ✅ Free-play board that names the current opening.
-2. **Play it:** drill flow, mistakes and hints, free play with live names, Next.
+2. **Play it:** drill flow, mistakes and hints, free play with live names, Next. ✅
 3. **Name it:** final position, move navigation, fuzzy search, checking, Next.
 4. **Polish:** tabs, session score, mobile layout, keyboard shortcuts, light/dark board colors.
 5. **Progress** (optional): history, weighted picks, stats.
