@@ -127,9 +127,11 @@ src/name.ts          Name it drill (moves → name): move navigation, flip, type
 src/search.ts        word-prefix name search behind the Name it answer box
 src/moves.ts         numbered move list, optionally clickable
 src/board.ts         Board: chessground view driven by a chess.js game; accept/reject hook, hints
-src/pool.ts          shuffled draws without repeats
+src/pool.ts          shuffled draws without repeats, with some draws revisiting recent misses
 src/filter.ts        family / max-moves filter for both drills, saved in localStorage
 src/score.ts         session tally shared by the drills
+src/progress.ts      per-opening history in localStorage (Play it by name, Name it by position)
+src/stats.ts         Stats tab: totals, recent misses to review, accuracy per family
 src/openings.ts      the opening list and the position (EPD) → openings index
 src/data/openings.json  generated; [eco, name, SAN moves, final EPD] per line
 src/style.css        styles; colors are CSS custom properties on :root, light + dark

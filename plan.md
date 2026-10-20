@@ -112,7 +112,7 @@ open question 3). No repeats until the pool is used up.
 - **Wrong:** show it as wrong and let them try again. A **Give up** button shows the answer.
 - After answering: show the full name and ECO code, then **Next**.
 
-## Progress (later, optional)
+## Progress
 
 - Per-opening history in `localStorage`: last result, streak, times seen.
 - Weight the next-drill pick toward openings the user missed recently (simple spaced repetition).
@@ -126,7 +126,9 @@ open question 3). No repeats until the pool is used up.
 3. **Name it:** final position, move navigation, fuzzy search, checking, Next. ✅
 4. **Polish:** tabs, session score, mobile layout, keyboard shortcuts, light/dark board colors. ✅
    Also the pool filters from decision 3 (family + max moves), remembered with the last tab.
-5. **Progress** (optional): history, weighted picks, stats.
+5. **Progress** (optional): history, weighted picks, stats. ✅ About a third of draws revisit a
+   recent miss (never within 3 draws of seeing it); a Stats tab shows totals, a review list, and
+   accuracy per family.
 
 Each step is its own PR with a short preview note.
 

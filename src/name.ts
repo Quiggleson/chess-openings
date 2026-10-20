@@ -2,13 +2,19 @@ import { Board } from './board'
 import { renderMoves } from './moves'
 import { names, openings, openingsAt, type Opening } from './openings'
 import { Pool } from './pool'
+import type { Progress, Result } from './progress'
 import type { Score } from './score'
 import { searcher } from './search'
 
 const search = searcher(names)
 
 // Moves → name. Shows a line's final position; any name for that position counts.
-export function nameIt(root: HTMLElement, score: Score, include: (opening: Opening) => boolean) {
+export function nameIt(
+  root: HTMLElement,
+  score: Score,
+  progress: Progress,
+  include: (opening: Opening) => boolean,
+) {
   root.innerHTML = `
     <div class="layout">
       <div>
@@ -48,7 +54,10 @@ export function nameIt(root: HTMLElement, score: Score, include: (opening: Openi
 
   const board = new Board(root.querySelector<HTMLElement>('.board')!)
   board.setInteractive(false)
-  const pool = new Pool(() => openings.filter(include))
+  const pool = new Pool(
+    () => openings.filter(include),
+    (line) => progress.isShaky('name', line.epd),
+  )
 
   let line: Opening
   let answers: Opening[] = []
@@ -124,9 +133,10 @@ export function nameIt(root: HTMLElement, score: Score, include: (opening: Openi
     }
   }
 
-  function finish(result: 'clean' | 'help' | 'fail') {
+  function finish(result: Result) {
     done = true
     score.record(result === 'clean')
+    progress.record('name', line.epd, result)
     const answer = `${answers[0].name} (${answers[0].eco})`
     const others = [...new Set(answers.map((a) => a.name))].slice(1)
     const also = others.length ? ` Also known as: ${others.join('; ')}.` : ''
