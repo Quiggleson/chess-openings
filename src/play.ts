@@ -14,7 +14,7 @@ interface Candidate {
 const MISSES_BEFORE_ARROW = 3
 
 // Name → moves. The user plays both sides; any line sharing the prompt's name counts.
-export function playIt(root: HTMLElement, score: Score) {
+export function playIt(root: HTMLElement, score: Score, include: (opening: Opening) => boolean) {
   root.innerHTML = `
     <div class="layout">
       <div class="board-wrap"><div class="board"></div></div>
@@ -29,6 +29,7 @@ export function playIt(root: HTMLElement, score: Score) {
           <button type="button" data-action="undo" class="secondary" hidden>Undo</button>
           <button type="button" data-action="next" hidden>Next</button>
         </div>
+        <p class="keys">Keys: <kbd>H</kbd> hint · <kbd>S</kbd> show me · <kbd>U</kbd> undo · <kbd>Enter</kbd> next</p>
       </section>
     </div>
   `
@@ -39,7 +40,7 @@ export function playIt(root: HTMLElement, score: Score) {
   const [hintBtn, showBtn, undoBtn, nextBtn] = ['hint', 'show', 'undo', 'next'].map(button)
 
   const board = new Board(root.querySelector<HTMLElement>('.board')!)
-  const pool = new Pool(() => names)
+  const pool = new Pool(() => names.filter((name) => openingsNamed(name).some(include)))
 
   let candidates: Candidate[] = []
   let state: 'drill' | 'showing' | 'done' = 'drill'
@@ -167,9 +168,16 @@ export function playIt(root: HTMLElement, score: Score) {
     show() {
       board.redraw()
     },
-    // Enter moves on once the line is finished, so a whole session can stay on the keyboard.
+    refill() {
+      pool.refill()
+      start()
+    },
     onKey(event: KeyboardEvent) {
-      if (event.key === 'Enter' && state === 'done') start()
+      const key = event.key.toLowerCase()
+      if (key === 'h') showHint(hintLevel + 1)
+      else if (key === 's') showMe()
+      else if ((key === 'u' || key === 'backspace') && !undoBtn.hidden) undoBtn.click()
+      else if ((key === 'enter' || key === 'n') && state === 'done') start()
     },
   }
 }

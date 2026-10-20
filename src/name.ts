@@ -8,7 +8,7 @@ import { searcher } from './search'
 const search = searcher(names)
 
 // Moves → name. Shows a line's final position; any name for that position counts.
-export function nameIt(root: HTMLElement, score: Score) {
+export function nameIt(root: HTMLElement, score: Score, include: (opening: Opening) => boolean) {
   root.innerHTML = `
     <div class="layout">
       <div>
@@ -34,6 +34,7 @@ export function nameIt(root: HTMLElement, score: Score) {
           <button type="button" data-action="give-up" class="secondary">Give up</button>
           <button type="button" data-action="next" hidden>Next</button>
         </div>
+        <p class="keys">Keys: <kbd>←</kbd> <kbd>→</kbd> step · <kbd>F</kbd> flip · <kbd>/</kbd> answer · <kbd>Enter</kbd> next</p>
       </section>
     </div>
   `
@@ -47,7 +48,7 @@ export function nameIt(root: HTMLElement, score: Score) {
 
   const board = new Board(root.querySelector<HTMLElement>('.board')!)
   board.setInteractive(false)
-  const pool = new Pool(() => openings)
+  const pool = new Pool(() => openings.filter(include))
 
   let line: Opening
   let answers: Opening[] = []
@@ -60,11 +61,9 @@ export function nameIt(root: HTMLElement, score: Score) {
   root.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((button) =>
     button.addEventListener('click', () => step(button.dataset.step!)),
   )
-  root.querySelector('[data-action="flip"]')!.addEventListener('click', () => {
-    board.orientation = board.orientation === 'white' ? 'black' : 'white'
-  })
+  root.querySelector('[data-action="flip"]')!.addEventListener('click', flip)
   giveUpBtn.addEventListener('click', () => finish('fail'))
-  nextBtn.addEventListener('click', start)
+  nextBtn.addEventListener('click', next)
 
   input.addEventListener('input', () => {
     suggestions = search(input.value)
@@ -72,6 +71,8 @@ export function nameIt(root: HTMLElement, score: Score) {
     renderSuggestions()
   })
   input.addEventListener('keydown', (event) => {
+    // Escape with nothing to dismiss leaves the box, so the arrow keys step through moves again.
+    if (event.key === 'Escape' && !suggestions.length) input.blur()
     if (!suggestions.length) return
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
@@ -102,6 +103,10 @@ export function nameIt(root: HTMLElement, score: Score) {
     giveUpBtn.hidden = false
     nextBtn.hidden = true
     goTo(line.moves.length)
+  }
+
+  function next() {
+    start()
     input.focus({ preventScroll: true })
   }
 
@@ -131,6 +136,10 @@ export function nameIt(root: HTMLElement, score: Score) {
     giveUpBtn.hidden = true
     nextBtn.hidden = false
     nextBtn.focus({ preventScroll: true })
+  }
+
+  function flip() {
+    board.orientation = board.orientation === 'white' ? 'black' : 'white'
   }
 
   function step(where: string) {
@@ -179,13 +188,22 @@ export function nameIt(root: HTMLElement, score: Score) {
       board.redraw()
       if (!done) input.focus({ preventScroll: true })
     },
+    refill() {
+      pool.refill()
+      start()
+    },
     onKey(event: KeyboardEvent) {
       const steps: Record<string, string> = { ArrowLeft: 'back', ArrowRight: 'forward', Home: 'start', End: 'end' }
       if (steps[event.key]) {
         event.preventDefault()
         step(steps[event.key])
-      } else if (event.key === 'Enter' && done) {
-        start()
+      } else if (event.key.toLowerCase() === 'f') {
+        flip()
+      } else if (event.key === '/' && !done) {
+        event.preventDefault()
+        input.focus()
+      } else if ((event.key === 'Enter' || event.key.toLowerCase() === 'n') && done) {
+        next()
       }
     },
   }
