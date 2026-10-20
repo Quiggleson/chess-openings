@@ -12,7 +12,7 @@ This file is the working plan. Edit it as decisions change; settled decisions ar
 - **Source:** [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings), CC0 (public
   domain). Five TSV files (`a.tsv`–`e.tsv`), columns `eco`, `name`, `pgn`.
 - **Size:** 3,865 lines, 3,177 distinct names, 150 families (the part before the `:`, e.g.
-  "Sicilian Defense"). Longest line is 54 plies. Raw TSV is ~400 KB; as JSON it should gzip to well
+  "Sicilian Defense"). Longest line is 36 plies (18 moves). Raw TSV is ~400 KB; as JSON it should gzip to well
   under 100 KB.
 - **Build step:** a script (`scripts/build-openings.ts`) downloads the TSVs once and writes
   `src/data/openings.json`, which is committed. Each entry is `[eco, name, moves, epd]`:
@@ -124,7 +124,8 @@ open question 3). No repeats until the pool is used up.
    rendered on screen. ✅ Free-play board that names the current opening.
 2. **Play it:** drill flow, mistakes and hints, free play with live names, Next. ✅
 3. **Name it:** final position, move navigation, fuzzy search, checking, Next. ✅
-4. **Polish:** tabs, session score, mobile layout, keyboard shortcuts, light/dark board colors.
+4. **Polish:** tabs, session score, mobile layout, keyboard shortcuts, light/dark board colors. ✅
+   Also the pool filters from decision 3 (family + max moves), remembered with the last tab.
 5. **Progress** (optional): history, weighted picks, stats.
 
 Each step is its own PR with a short preview note.

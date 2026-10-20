@@ -128,6 +128,7 @@ src/search.ts        word-prefix name search behind the Name it answer box
 src/moves.ts         numbered move list, optionally clickable
 src/board.ts         Board: chessground view driven by a chess.js game; accept/reject hook, hints
 src/pool.ts          shuffled draws without repeats
+src/filter.ts        family / max-moves filter for both drills, saved in localStorage
 src/score.ts         session tally shared by the drills
 src/openings.ts      the opening list and the position (EPD) → openings index
 src/data/openings.json  generated; [eco, name, SAN moves, final EPD] per line
