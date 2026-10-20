@@ -1,5 +1,6 @@
 import './style.css'
 import { registerSW } from 'virtual:pwa-register'
+import { nameIt } from './name'
 import { playIt } from './play'
 import { Score } from './score'
 
@@ -15,7 +16,13 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <p id="score" class="score"></p>
   </header>
 
-  <div id="play"></div>
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" id="tab-play" aria-controls="play" aria-selected="true">Play it</button>
+    <button type="button" role="tab" id="tab-name" aria-controls="name" aria-selected="false">Name it</button>
+  </nav>
+
+  <div id="play" role="tabpanel" aria-labelledby="tab-play"></div>
+  <div id="name" role="tabpanel" aria-labelledby="tab-name" hidden></div>
 
   <footer>
     <a class="home" href="/">← quiggleson.com</a>
@@ -35,10 +42,29 @@ score.onChange = () => {
   scoreEl.textContent = `${score.right} / ${score.total} this session`
 }
 
-const play = playIt(document.querySelector<HTMLElement>('#play')!, score)
+const modes = {
+  play: playIt(document.querySelector<HTMLElement>('#play')!, score),
+  name: nameIt(document.querySelector<HTMLElement>('#name')!, score),
+}
+let active: keyof typeof modes = 'play'
+
+for (const key of Object.keys(modes) as (keyof typeof modes)[]) {
+  document.querySelector(`#tab-${key}`)!.addEventListener('click', () => select(key))
+}
+
+function select(key: keyof typeof modes) {
+  active = key
+  for (const other of Object.keys(modes) as (keyof typeof modes)[]) {
+    document.querySelector(`#tab-${other}`)!.setAttribute('aria-selected', String(other === key))
+    document.querySelector<HTMLElement>(`#${other}`)!.hidden = other !== key
+  }
+  modes[key].show()
+}
+
 document.addEventListener('keydown', (event) => {
-  if (event.target instanceof HTMLInputElement) return
-  play.onKey(event)
+  // Inputs and buttons handle their own keys; Enter on a focused button already clicks it.
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLButtonElement) return
+  modes[active].onKey(event)
 })
 
 if ('serviceWorker' in navigator) registerSW({ immediate: true })

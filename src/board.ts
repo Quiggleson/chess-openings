@@ -71,6 +71,11 @@ export class Board {
     this.cg.set({ orientation: color })
   }
 
+  // chessground measures its container once; call after showing a board that started hidden.
+  redraw() {
+    this.cg.redrawAll()
+  }
+
   hint(shapes: DrawShape[]) {
     this.hints = shapes
     this.drawShapes()

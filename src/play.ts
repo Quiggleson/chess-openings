@@ -1,4 +1,5 @@
 import { Board } from './board'
+import { renderMoves } from './moves'
 import { epd, lastNamed, moveLabel, names, openingsNamed, positions, type Opening } from './openings'
 import { Pool } from './pool'
 import type { Score } from './score'
@@ -147,13 +148,7 @@ export function playIt(root: HTMLElement, score: Score) {
       feedback(`Now: ${opening?.name ?? 'out of book'}${opening ? ` (${opening.eco})` : ''}${where}`)
     }
 
-    movesEl.replaceChildren(
-      ...pairs(sans).map(([white, black]) => {
-        const li = document.createElement('li')
-        li.textContent = black ? `${white} ${black}` : white
-        return li
-      }),
-    )
+    renderMoves(movesEl, sans)
   }
 
   function feedback(text: string, tone?: 'ok' | 'warn') {
@@ -169,17 +164,14 @@ export function playIt(root: HTMLElement, score: Score) {
   start()
 
   return {
+    show() {
+      board.redraw()
+    },
     // Enter moves on once the line is finished, so a whole session can stay on the keyboard.
     onKey(event: KeyboardEvent) {
       if (event.key === 'Enter' && state === 'done') start()
     },
   }
-}
-
-function pairs(sans: string[]) {
-  const out: [string, string?][] = []
-  for (let i = 0; i < sans.length; i += 2) out.push([sans[i], sans[i + 1]])
-  return out
 }
 
 function wait(ms: number) {
