@@ -1,9 +1,9 @@
 import { Board } from './board'
 import { renderMoves } from './moves'
-import { epd, lastNamed, moveLabel, names, openingsNamed, positions, type Opening } from './openings'
-import { Pool } from './pool'
-import type { Progress, Result } from './progress'
-import type { Score } from './score'
+import { epd, lastNamed, moveLabel, openingsNamed, positions, type Opening } from './openings'
+import type { Result } from './progress'
+import { mainLine, type Session } from './session'
+import { starButton } from './star'
 
 interface Candidate {
   opening: Opening
@@ -13,27 +13,28 @@ interface Candidate {
 const MISSES_BEFORE_ARROW = 3
 
 // Name → moves. The user plays both sides; any line sharing the prompt's name counts.
-export function playIt(
-  root: HTMLElement,
-  score: Score,
-  progress: Progress,
-  include: (opening: Opening) => boolean,
-) {
+export function playIt(root: HTMLElement, session: Session) {
   root.innerHTML = `
     <div class="layout">
       <div class="board-wrap"><div class="board"></div></div>
       <section class="panel">
-        <p class="label">Play this opening</p>
-        <p class="name prompt"></p>
+        <div class="prompt-row">
+          <div>
+            <p class="label">Play this opening</p>
+            <p class="name prompt"></p>
+          </div>
+        </div>
         <p class="feedback" aria-live="polite"></p>
         <ol class="moves"></ol>
         <div class="buttons">
           <button type="button" data-action="hint">Hint</button>
           <button type="button" data-action="show" class="secondary">Show me</button>
           <button type="button" data-action="undo" class="secondary" hidden>Undo</button>
+          <button type="button" data-action="easy" class="secondary" hidden>Easy</button>
           <button type="button" data-action="next" hidden>Next</button>
+          <button type="button" data-action="all" class="secondary" hidden>Practice all openings</button>
         </div>
-        <p class="keys">Keys: <kbd>H</kbd> hint · <kbd>S</kbd> show me · <kbd>U</kbd> undo · <kbd>Enter</kbd> next</p>
+        <p class="keys">Keys: <kbd>H</kbd> hint · <kbd>S</kbd> show me · <kbd>U</kbd> undo · <kbd>E</kbd> easy · <kbd>*</kbd> star · <kbd>Enter</kbd> next</p>
       </section>
     </div>
   `
@@ -41,17 +42,16 @@ export function playIt(
   const feedbackEl = root.querySelector<HTMLElement>('.feedback')!
   const movesEl = root.querySelector<HTMLOListElement>('.moves')!
   const button = (action: string) => root.querySelector<HTMLButtonElement>(`[data-action="${action}"]`)!
-  const [hintBtn, showBtn, undoBtn, nextBtn] = ['hint', 'show', 'undo', 'next'].map(button)
+  const [hintBtn, showBtn, undoBtn, easyBtn, nextBtn, allBtn] = ['hint', 'show', 'undo', 'easy', 'next', 'all'].map(
+    button,
+  )
+  const star = starButton(session.deck)
+  root.querySelector('.prompt-row')!.append(star.el)
 
   const board = new Board(root.querySelector<HTMLElement>('.board')!)
-  const pool = new Pool(
-    () => names.filter((name) => openingsNamed(name).some(include)),
-    (name) => progress.isShaky('play', name),
-  )
 
-  let prompt = ''
   let candidates: Candidate[] = []
-  let state: 'drill' | 'showing' | 'done' = 'drill'
+  let state: 'drill' | 'showing' | 'done' | 'empty' = 'drill'
   let lineEnd = 0
   let misses = 0
   let hintLevel = 0
@@ -95,9 +95,13 @@ export function playIt(
     render()
   })
   nextBtn.addEventListener('click', start)
+  easyBtn.addEventListener('click', markEasy)
+  allBtn.addEventListener('click', () => session.practiceAll())
 
   function start() {
-    const name = (prompt = pool.next()!)
+    const name = session.nextPlay()
+    if (!name) return empty()
+    star.set(name, mainLine(name).epd)
     candidates = openingsNamed(name).map((opening) => ({ opening, positions: positions(opening.moves) }))
     state = 'drill'
     misses = 0
@@ -108,6 +112,23 @@ export function playIt(
     promptEl.textContent = name
     feedback(`${toMove()} to move.`)
     render()
+  }
+
+  function empty() {
+    state = 'empty'
+    candidates = []
+    star.set(undefined)
+    board.reset()
+    board.setInteractive(false)
+    promptEl.textContent = 'Nothing to review'
+    feedback(session.emptyMessage('play'))
+    render()
+  }
+
+  function markEasy() {
+    if (easyBtn.hidden) return
+    easyBtn.hidden = true
+    feedback(session.easy('play', candidates[0].opening), 'ok')
   }
 
   function showHint(level: number) {
@@ -136,21 +157,25 @@ export function playIt(
   function finish(result: Result) {
     state = 'done'
     lineEnd = board.history().length
-    score.record(result === 'clean')
-    progress.record('play', prompt, result)
     const opening = candidates[0].opening
+    const review = session.finish('play', opening, result)
     const verdict = { clean: '✓ Correct', help: '✓ Done, with help', fail: '✗ Shown' }[result]
-    feedback(`${verdict} · ${opening.eco}. Keep playing to explore, or press Next.`, result === 'clean' ? 'ok' : undefined)
+    const after = review || 'Keep playing to explore, or press Next.'
+    feedback(`${verdict} · ${opening.eco}. ${after}`, result === 'clean' ? 'ok' : undefined)
     render()
+    easyBtn.hidden = !(result === 'clean' && session.canEasy('play', opening))
   }
 
   function render() {
     const sans = board.history()
-    const drilling = state !== 'done'
+    const drilling = state === 'drill' || state === 'showing'
     hintBtn.hidden = showBtn.hidden = !drilling
     hintBtn.disabled = showBtn.disabled = state === 'showing'
     nextBtn.hidden = drilling
-    undoBtn.hidden = drilling || sans.length <= lineEnd
+    nextBtn.textContent = state === 'empty' ? 'Check again' : 'Next'
+    allBtn.hidden = state !== 'empty'
+    if (state !== 'done') easyBtn.hidden = true
+    undoBtn.hidden = state !== 'done' || sans.length <= lineEnd
 
     if (state === 'done' && sans.length > lineEnd) {
       const { opening, ply } = lastNamed(sans)
@@ -177,16 +202,15 @@ export function playIt(
     show() {
       board.redraw()
     },
-    refill() {
-      pool.refill()
-      start()
-    },
+    restart: start,
     onKey(event: KeyboardEvent) {
       const key = event.key.toLowerCase()
       if (key === 'h') showHint(hintLevel + 1)
       else if (key === 's') showMe()
       else if ((key === 'u' || key === 'backspace') && !undoBtn.hidden) undoBtn.click()
-      else if ((key === 'enter' || key === 'n') && state === 'done') start()
+      else if (key === 'e') markEasy()
+      else if (key === '*') star.toggle()
+      else if ((key === 'enter' || key === 'n') && (state === 'done' || state === 'empty')) start()
     },
   }
 }

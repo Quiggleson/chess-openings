@@ -1,5 +1,7 @@
+import { until } from './deck'
 import { openingsAt } from './openings'
 import type { Mode, Progress } from './progress'
+import type { Session } from './session'
 
 const MODES: [Mode, string][] = [
   ['play', 'Play it'],
@@ -12,7 +14,8 @@ interface Tally {
   right: number
 }
 
-export function stats(root: HTMLElement, progress: Progress) {
+export function stats(root: HTMLElement, progress: Progress, session: Session) {
+  const { deck } = session
   root.innerHTML = `
     <div class="stats">
       <section class="panel">
@@ -22,6 +25,13 @@ export function stats(root: HTMLElement, progress: Progress) {
       <section class="panel">
         <p class="label">To review</p>
         <ul class="review"></ul>
+      </section>
+      <section class="panel wide">
+        <p class="label">My deck</p>
+        <table class="deck">
+          <thead><tr><th>Opening</th><th>Play it</th><th>Name it</th><th><span class="visually-hidden">Remove</span></th></tr></thead>
+          <tbody></tbody>
+        </table>
       </section>
       <section class="panel wide">
         <p class="label">By family</p>
@@ -36,12 +46,14 @@ export function stats(root: HTMLElement, progress: Progress) {
   const totalsEl = root.querySelector<HTMLElement>('.totals')!
   const reviewEl = root.querySelector<HTMLUListElement>('.review')!
   const familiesEl = root.querySelector<HTMLTableSectionElement>('.families tbody')!
+  const deckEl = root.querySelector<HTMLTableSectionElement>('.deck tbody')!
 
   root.querySelector('[data-action="reset"]')!.addEventListener('click', () => {
     if (confirm('Clear all saved progress? This cannot be undone.')) progress.reset()
   })
 
   function render() {
+    renderDeck()
     totalsEl.replaceChildren(
       ...MODES.flatMap(([mode, label]) => {
         const records = progress.entries(mode).map(([, r]) => r)
@@ -52,6 +64,8 @@ export function stats(root: HTMLElement, progress: Progress) {
           : 'Not started yet'
         return [el('dt', label), el('dd', text)]
       }),
+      el('dt', 'My deck'),
+      el('dd', deckSummary()),
     )
 
     const shaky = MODES.flatMap(([mode, label]) =>
@@ -90,11 +104,43 @@ export function stats(root: HTMLElement, progress: Progress) {
             tr.append(el('td', family), el('td', cell(row.play)), el('td', cell(row.name)))
             return tr
           })
-        : [emptyRow()]),
+        : [emptyRow('Finish a drill to see stats here.', 3)]),
+    )
+  }
+
+  function deckSummary() {
+    const size = deck.all().length
+    if (!size) return 'Empty'
+    const due = session.due('play').length + session.due('name').length
+    return `${size} ${size === 1 ? 'opening' : 'openings'} · ${due} ${due === 1 ? 'card' : 'cards'} due`
+  }
+
+  function renderDeck() {
+    const entries = deck.all().sort((a, b) => a.name.localeCompare(b.name))
+    deckEl.replaceChildren(
+      ...(entries.length
+        ? entries.map((entry) => {
+            const tr = document.createElement('tr')
+            const remove = el('button', '✕', 'remove')
+            remove.type = 'button'
+            remove.setAttribute('aria-label', `Remove ${entry.name} from your deck`)
+            remove.addEventListener('click', () => deck.remove(entry.name))
+            const cell = document.createElement('td')
+            cell.append(remove)
+            tr.append(
+              el('td', entry.name),
+              el('td', due(entry.cards.play.due)),
+              el('td', due(entry.cards.name.due)),
+              cell,
+            )
+            return tr
+          })
+        : [emptyRow('Star ☆ openings in Play it or Name it to build your deck.', 4)]),
     )
   }
 
   progress.onChange = render
+  deck.subscribe(render)
   render()
 
   return {
@@ -116,10 +162,15 @@ function percent(part: number, whole: number) {
   return `${Math.round((100 * part) / whole)}%`
 }
 
-function emptyRow() {
+function due(time: number) {
+  const when = until(time)
+  return when === 'now' ? 'Due now' : `Due ${when}`
+}
+
+function emptyRow(text: string, columns: number) {
   const tr = document.createElement('tr')
-  const td = el('td', 'Finish a drill to see stats here.', 'muted')
-  td.colSpan = 3
+  const td = el('td', text, 'muted')
+  td.colSpan = columns
   tr.append(td)
   return tr
 }
