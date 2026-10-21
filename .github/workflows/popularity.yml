@@ -1,27 +1,52 @@
 name: Popularity
 
-# Fetches Lichess game counts for every opening position and uploads them as an artifact. It never
-# commits: a person (or an agent, via a PR) brings the file into the repo, so main only changes
-# through review.
+# Counts how often each opening line is played in a Lichess database dump and pushes the result to
+# the data/popularity branch. It never touches main: the counts reach the app through a PR.
 on:
   workflow_dispatch:
+    inputs:
+      month:
+        description: Dump month as YYYY-MM (blank = the latest)
+        default: ''
+      games:
+        description: How many games to read from the start of the dump
+        default: '5000000'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  fetch:
+  count:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
-      - run: node scripts/fetch-popularity.ts
+      - name: Count games
         env:
-          LICHESS_TOKEN: ${{ secrets.LICHESS_TOKEN }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: popularity
-          path: src/data/popularity.json
+          MONTH: ${{ inputs.month }}
+          GAMES: ${{ inputs.games }}
+        run: |
+          if [ -n "$MONTH" ]; then
+            url="https://database.lichess.org/standard/lichess_db_standard_rated_${MONTH}.pgn.zst"
+          else
+            url=$(curl -sSf https://database.lichess.org/standard/list.txt | head -1)
+          fi
+          echo "DUMP=$(basename "$url")" >> "$GITHUB_ENV"
+          echo "Reading $GAMES games from $url"
+          # The counter stops reading after $GAMES games, so curl and zstd end on a broken pipe;
+          # the step's result is node's.
+          curl -sSL "$url" | zstd -dc | node scripts/count-popularity.ts --games "$GAMES"
+          test -s src/data/popularity.json
+      - name: Push to data/popularity
+        env:
+          GAMES: ${{ inputs.games }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898283+github-actions[bot]@users.noreply.github.com'
+          git checkout -B data/popularity
+          git add src/data/popularity.json
+          git commit -m "Popularity counts: first $GAMES games of $DUMP"
+          git push --force origin data/popularity
