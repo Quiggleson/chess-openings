@@ -391,6 +391,7 @@ kbd {
   }
 }
 
+.filter-controls label[hidden],
 .filters[hidden] {
   display: none;
 }

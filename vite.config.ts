@@ -21,8 +21,9 @@ export default defineConfig({
     // prefix, so /chess-openings/* requests only find the build if it sits under dist/chess-openings/.
     outDir: 'dist/chess-openings',
     emptyOutDir: true,
-    // The bundled opening list is ~600 kB raw (~90 kB gzipped) and needed on first paint anyway.
-    chunkSizeWarningLimit: 800,
+    // The bundled opening list and popularity counts are ~900 kB raw (~160 kB gzipped) and needed
+    // on first paint anyway.
+    chunkSizeWarningLimit: 1000,
   },
   define: {
     __APP_VERSION__: JSON.stringify(`${commitSha()} · built ${builtAt} UTC`),

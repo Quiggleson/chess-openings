@@ -1,12 +1,13 @@
 import { Deck, gradeFor, until, type Entry } from './deck'
 import { matches, type Filter } from './filter'
 import { names, openings, openingsAt, openingsNamed, type Opening } from './openings'
+import { gamesAt, gamesNamed } from './popularity'
 import { Pool } from './pool'
 import type { Mode, Progress, Result } from './progress'
 import type { Score } from './score'
 
-// What the drills draw from and where their results go: every opening (shuffled, leaning on
-// recent misses) or only the cards due in the user's deck (spaced repetition).
+// What the drills draw from and where their results go: every opening (shuffled or most played
+// first, leaning on recent misses) or only the cards due in the user's deck (spaced repetition).
 export class Session {
   readonly deck = new Deck()
   private readonly score: Score
@@ -25,15 +26,22 @@ export class Session {
     this.playPool = new Pool(
       () => names.filter((name) => openingsNamed(name).some((o) => this.include(o))),
       (name) => progress.isShaky('play', name),
+      () => (this.popularFirst ? gamesNamed : undefined),
     )
     this.namePool = new Pool(
       () => openings.filter((o) => this.include(o)),
       (line) => progress.isShaky('name', line.epd),
+      () => (this.popularFirst ? (line) => gamesAt(line.epd) : undefined),
     )
   }
 
   get usingDeck() {
     return this.filter().source === 'deck'
+  }
+
+  // Deck mode is always soonest-due first, like Anki; popularity orders practice of all openings.
+  private get popularFirst() {
+    return this.filter().order === 'popular'
   }
 
   include(opening: Opening) {

@@ -124,6 +124,9 @@ for any change that touches routing, paths, or the PWA config.
   license is why the repo is GPL-3.0-or-later ([LICENSE](LICENSE)).
 - **Openings data:** Lichess's [chess-openings](https://github.com/lichess-org/chess-openings)
   list (CC0), bundled as `src/data/openings.json`.
+- **Popularity:** games per line from a Lichess [database dump](https://database.lichess.org/),
+  bundled as `src/data/popularity.json`. To refresh it, run the **Popularity** workflow (it pushes
+  to the `data/popularity` branch), then bring that file into a PR.
 
 ## Layout
 
@@ -146,11 +149,14 @@ src/progress.ts      per-opening history in localStorage (Play it by name, Name 
 src/stats.ts         Stats tab: totals, recent misses to review, accuracy per family
 src/openings.ts      the opening list and the position (EPD) → openings index
 src/data/openings.json  generated; [eco, name, SAN moves, final EPD] per line
+src/popularity.ts    games per line / per name, for the Most popular first order
+src/data/popularity.json  generated; { final EPD: games that followed the line }
 src/style.css        styles; colors are CSS custom properties on :root, light + dark
 src/env.d.ts         ambient types: __APP_VERSION__, virtual:pwa-register
 public/              copied verbatim into dist/chess-openings/: favicon, apple-touch-icon, icons/
 scripts/smoke.sh     HTTP checks against production or a local origin
 scripts/build-openings.ts  regenerates src/data/openings.json (`node scripts/build-openings.ts`)
+scripts/count-popularity.ts  counts line popularity from PGN on stdin (run by the Popularity workflow)
 scripts/make-icons.sh  regenerates the PNG icons (needs ImageMagick `convert`)
 vite.config.ts       base, outDir, build version, manifest + service worker config
 wrangler.jsonc       Worker name, assets directory, the four routes

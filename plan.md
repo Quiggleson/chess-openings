@@ -118,6 +118,16 @@ open question 3). No repeats until the pool is used up.
 - Weight the next-drill pick toward openings the user missed recently (simple spaced repetition).
 - A small stats view: accuracy per family.
 
+## Popularity order
+
+- **Order → Most popular first** in the Openings filter (practicing all openings; the deck is
+  always soonest-due first). Both drills walk down the list by how often the line is played, still
+  without repeats, still mixing in recent misses, and still within the family and length filters.
+- **Data:** the first 5,000,000 games of the latest Lichess monthly dump
+  (`lichess_db_standard_rated_2026-09`), counted by the Popularity workflow. A game counts for
+  every line it follows move for move from the start, so transposed move orders aren't counted.
+  Play it ranks a name by its most-played line.
+
 ## My deck (spaced repetition)
 
 Anki-style practice of the openings you pick.

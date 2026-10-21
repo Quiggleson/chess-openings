@@ -4,6 +4,7 @@ export interface Filter {
   family: string
   maxMoves: number
   source: 'all' | 'deck'
+  order: 'random' | 'popular'
 }
 
 const KEY = 'chess-openings:filter'
@@ -22,12 +23,13 @@ export function matches(opening: Opening, filter: Filter) {
 
 // Browser storage can be missing or throw (private windows, blocked site data); fall back to all.
 export function loadFilter(): Filter {
-  const all: Filter = { family: '', maxMoves: LONGEST, source: 'all' }
+  const all: Filter = { family: '', maxMoves: LONGEST, source: 'all', order: 'random' }
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null')
     if (saved && (saved.family === '' || families.includes(saved.family)) && saved.maxMoves >= 1) {
       const source = saved.source === 'deck' ? 'deck' : 'all'
-      return { family: saved.family, maxMoves: Math.min(saved.maxMoves, LONGEST), source }
+      const order = saved.order === 'popular' ? 'popular' : 'random'
+      return { family: saved.family, maxMoves: Math.min(saved.maxMoves, LONGEST), source, order }
     }
   } catch {}
   return all
