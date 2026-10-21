@@ -40,6 +40,12 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           <option value="deck">My deck (due cards)</option>
         </select>
       </label>
+      <label id="order-label">Order
+        <select id="order">
+          <option value="random">Random</option>
+          <option value="popular">Most popular first</option>
+        </select>
+      </label>
       <label>Family
         <select id="family">
           <option value="">All families</option>
@@ -86,6 +92,8 @@ score.onChange = () => {
 }
 
 const sourceSelect = document.querySelector<HTMLSelectElement>('#source')!
+const orderSelect = document.querySelector<HTMLSelectElement>('#order')!
+const orderLabel = document.querySelector<HTMLElement>('#order-label')!
 const familySelect = document.querySelector<HTMLSelectElement>('#family')!
 const maxInput = document.querySelector<HTMLInputElement>('#max')!
 const maxOut = document.querySelector<HTMLOutputElement>('#max-out')!
@@ -94,6 +102,7 @@ const filterSummary = document.querySelector<HTMLElement>('#filter-summary')!
 
 let filter = loadFilter()
 sourceSelect.value = filter.source
+orderSelect.value = filter.order
 familySelect.value = filter.family
 maxInput.value = String(filter.maxMoves)
 
@@ -141,13 +150,15 @@ function savedTab(): Mode {
 
 renderFilter()
 sourceSelect.addEventListener('change', changeFilter)
+orderSelect.addEventListener('change', changeFilter)
 familySelect.addEventListener('change', changeFilter)
 maxInput.addEventListener('input', renderFilter)
 maxInput.addEventListener('change', changeFilter)
 
 function pendingFilter(): Filter {
   const source = sourceSelect.value === 'deck' ? 'deck' : 'all'
-  return { source, family: familySelect.value, maxMoves: Number(maxInput.value) }
+  const order = orderSelect.value === 'popular' ? 'popular' : 'random'
+  return { source, order, family: familySelect.value, maxMoves: Number(maxInput.value) }
 }
 
 function changeFilter() {
@@ -178,7 +189,10 @@ function renderFilter() {
   poolCount.dataset.state = count ? '' : 'warn'
   const moves = filter.maxMoves < LONGEST ? `, up to ${filter.maxMoves} moves` : ''
   const source = filter.source === 'deck' ? 'my deck' : 'all openings'
-  filterSummary.textContent = `Practice: ${source} · ${filter.family || 'all families'}${moves}`
+  const popular = filter.source === 'all' && filter.order === 'popular' ? ', most popular first' : ''
+  filterSummary.textContent = `Practice: ${source}${popular} · ${filter.family || 'all families'}${moves}`
+  // The deck is always served soonest-due first, so Order only means something for all openings.
+  orderLabel.hidden = pending.source === 'deck'
   renderDue()
 }
 
